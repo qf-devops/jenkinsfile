@@ -1,0 +1,54 @@
+echo "Will deploy to ${target_hosts}"
+
+def hosts = [:] 
+
+def strArray = target_hosts.tokenize(',')
+def deployable_branches = "${Branch}"
+
+
+
+   for (String item : strArray) {
+       stage ("DEPLOY_${item}"){ 
+            hosts["DEPLOY_${item}"] = { 
+                      echo "Will deploy to ${item}" 
+                     
+  if(deployable_branches.contains("dev")) {
+
+            echo "Building master branch."
+
+        //create apiserver-stop.sh file dynamically
+
+        writeFile file: "/tmp/apiserver-stop.sh", text: "#!/bin/bash \n umask 022 \n cd  /home/appowner/spp-jarfiles \n echo -n \$\"Stopping test server: \" \n PID=`ps -aef | grep java | grep test-api | grep test | grep -v grep | awk '{print \$2}'` \n if [ ! -z \"\$PID\" ] \n then \n echo \"Killing test  server: \$PID\" \n kill -9 \$PID \n else \n   echo \"test server  not running....nothing to stop\" \n fi"
+
+        //copy apiserver-stop.sh file the file into target server
+
+        sh ( 'scp -o StrictHostKeyChecking=no -r /tmp/apiserver-stop.sh vagrant@node01.example.com:/home/cmadmin/spp-jarfiles/ ')
+
+        //excute the apiserver-stop.sh file in target server to kill the process
+
+        sh 'ssh -T vagrant@node01.example.com /home/cmadmin/spp-jarfiles/apiserver-stop.sh'
+
+        //delete the  apiserver-stop.sh file in target server
+
+        sh 'ssh -T vagrant@node01.example.com rm /home/cmadmin/spp-jarfiles/apiserver-stop.sh'
+
+        //delete the exiting jar files
+
+         sh 'ssh -T vagrant@node01.example.com rm /home/cmadmin/spp-jarfiles/myapp-0.0.1-*.jar'
+
+        //copy the jar file into target server
+
+        sh ( 'scp -o StrictHostKeyChecking=no -r target/myapp-0.0.1-${BUILD_NUMBER}-SNAPSHOT.jar vagrant@node01.example.com:/home/cmadmin/spp-jarfiles/ ')
+
+        //run the jar file in the target server
+
+        sh ( 'ssh -T vagrant@node01.example.com "nohup java -jar /home/appowner/spp-jarfiles/myapp-0.0.1-${BUILD_NUMBER}-SNAPSHOT.jar  &>/dev/null &" ')     
+
+  }
+
+
+
+            }
+      }
+   }
+parallel hosts
