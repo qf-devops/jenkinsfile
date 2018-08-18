@@ -20,4 +20,11 @@ node('maven-label'){
       junit '**/target/surefire-reports/TEST-*.xml'
       archiveArtifacts 'target/*.jar'
    }
+   stage('email notification'){
+      mail bcc: '', body: '''Hi,
+  build success
+Thanks 
+
+  ''', cc: '', from: '', replyTo: '', subject: 'testmail', to: 'devops@edu.com'
+   }
 }
