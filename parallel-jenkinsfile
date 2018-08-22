@@ -8,7 +8,7 @@ for (int i = 0; i < 4 ; i++) {
                 node ('maven-label'){
                     sh "echo 'node: ${NODE_NAME},  index: ${index}, i: ${i}, testListVal: " + testList[index] + "'"
                 
-                        //writeFile file: "/tmp/usefulfile.txt", text: "This file is useful, need to archive it."
+                        writeFile file: "/tmp/usefulfile.txt", text: "This file is useful, need to archive it."
                 }
             }
       }
